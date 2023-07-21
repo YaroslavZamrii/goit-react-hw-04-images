@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
 import Searchbar from './Searchbar/Searchbar';
@@ -22,79 +22,75 @@ const toastConfig = {
   theme: 'colored',
 };
 
-export class App extends Component {
-  state = {
-    images: [],
-    query: '',
-    page: 1,
-    loadMore: false,
-    isLoading: false,
-    error: null,
-    modal: { isOpen: false, imgModal: null, tags: '' },
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [loadMore, setLoadMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [modal, setModal] = useState({
+    isOpen: false,
+    imgModal: null,
+    tags: '',
+  });
+
+  const searchQuery = query => {
+    setQuery(query);
+    setPage(1);
   };
 
-  searchQuery = query => {
-    this.setState({ query, page: 1 });
+  const clickBtn = () => {
+    setPage(prevPage => prevPage + 1);
   };
 
-  clickBtn = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const onOpenModal = (imgUrl, tags) => {
+    setModal({ isOpen: true, imgModal: imgUrl, tags });
   };
 
-  onOpenModal = (imgUrl, tags) => {
-    this.setState({ modal: { isOpen: true, imgModal: imgUrl, tags } });
-  };
-  onCloseModal = () => {
-    this.setState({ modal: { isOpen: false, imgModal: null, tags: '' } });
+  const onCloseModal = () => {
+    setModal({ isOpen: false, imgModal: null, tags: '' });
   };
 
-  async componentDidUpdate(prevProps, prevState) {
-    if (
-      this.state.page !== prevState.page ||
-      this.state.query !== prevState.query
-    )
+  useEffect(() => {
+    const requestImages = async (query, page) => {
       try {
-        this.setState({ isLoading: true });
-        const searchImgResult = await fetchImg(
-          this.state.query,
-          this.state.page
-        );
-        this.setState(prev => ({
-          images:
-            this.state.page === 1
-              ? searchImgResult.hits
-              : [...prev.images, ...searchImgResult.hits],
-          loadMore: this.state.page < Math.ceil(searchImgResult.totalHits / 12),
-        }));
+        setIsLoading(true);
+        const searchImgResult = await fetchImg(query, page);
+        const newImages =
+          page === 1
+            ? searchImgResult.hits
+            : [...images, ...searchImgResult.hits];
+        setImages(newImages);
+        setLoadMore(page < Math.ceil(searchImgResult.totalHits / 12));
+
         searchImgResult.total > 0
           ? toast.success('Your images were successfully fetched!', toastConfig)
-          : toast.info(
-              `Opps... .Your ${this.state.query} was not found.`,
-              toastConfig
-            );
+          : toast.info(`Opps... .Your ${query} was not found.`, toastConfig);
       } catch (error) {
-        this.setState({ error: error.message });
+        setError(error.message);
         toast.error(error.message, toastConfig);
       } finally {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       }
-  }
+    };
+    if (query.length === 0 && page === 1) return;
+    requestImages(query, page);
+  }, [query, page]);
 
-  render() {
-    return (
-      <Container>
-        <Searchbar onSubmit={this.searchQuery} />
-        <Loader isLoading={this.state.isLoading} />
-        <ImageCallery images={this.state.images} openModal={this.onOpenModal} />
-        {this.state.loadMore && <Button onClick={this.clickBtn} />}
-        {this.state.modal.isOpen && (
-          <Modal
-            imgModal={this.state.modal.imgModal}
-            tag={this.state.modal.tags}
-            onClose={this.onCloseModal}
-          />
-        )}
-      </Container>
-    );
-  }
-}
+  return (
+    <Container>
+      <Searchbar onSubmit={searchQuery} />
+      <Loader isLoading={isLoading} />
+      <ImageCallery images={images} openModal={onOpenModal} />
+      {loadMore && <Button onClick={clickBtn} />}
+      {modal.isOpen && (
+        <Modal
+          imgModal={modal.imgModal}
+          tag={modal.tags}
+          onClose={onCloseModal}
+        />
+      )}
+    </Container>
+  );
+};
