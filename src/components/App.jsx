@@ -57,11 +57,13 @@ export const App = () => {
       try {
         setIsLoading(true);
         const searchImgResult = await fetchImg(query, page);
-        const newImages =
+
+        setImages(prevImg =>
           page === 1
             ? searchImgResult.hits
-            : [...images, ...searchImgResult.hits];
-        setImages(newImages);
+            : [...prevImg, ...searchImgResult.hits]
+        );
+
         setLoadMore(page < Math.ceil(searchImgResult.totalHits / 12));
 
         searchImgResult.total > 0
