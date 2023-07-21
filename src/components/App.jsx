@@ -28,7 +28,7 @@ export const App = () => {
   const [page, setPage] = useState(1);
   const [loadMore, setLoadMore] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
   const [modal, setModal] = useState({
     isOpen: false,
     imgModal: null,
@@ -70,15 +70,15 @@ export const App = () => {
           ? toast.success('Your images were successfully fetched!', toastConfig)
           : toast.info(`Opps... .Your ${query} was not found.`, toastConfig);
       } catch (error) {
-        setError(error.message);
-        toast.error(error.message, toastConfig);
+        setErrorMsg(error.message);
+        toast.error(errorMsg, toastConfig);
       } finally {
         setIsLoading(false);
       }
     };
     if (query.length === 0 && page === 1) return;
     requestImages(query, page);
-  }, [query, page]);
+  }, [query, page, errorMsg]);
 
   return (
     <Container>
